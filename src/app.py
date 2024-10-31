@@ -1,10 +1,12 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
 from models import db
 from dotenv import load_dotenv
-from sqlalchemy import inspect
+from routes.characters import bp_character
+from routes.users import bp_user
+from routes.planets import bp_planet
 
 load_dotenv()
 
@@ -19,11 +21,9 @@ db.init_app(app)
 Migrate(app, db)
 CORS(app)
 
-@app.route('/tables', methods=['GET'])
-def list_tables():
-    inspector = inspect(db.engine)
-    tables = inspector.get_table_names()
-    return jsonify(tables)
+app.register_blueprint(bp_character)
+app.register_blueprint(bp_user)
+app.register_blueprint(bp_planet)
 
 
 if __name__ == '__main__':

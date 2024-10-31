@@ -28,8 +28,8 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'favorites_planets': [{'planet_id' : planet['planet_id']} for planet in self.favorites_planets],
-            'favorites_characters': [{'character_id' : character['character_id']} for character in self.favorites_characters]
+            'favorites_planets': [planet.serialize() for planet in self.favorites_planets],
+            'favorites_characters': [character.serialize() for character in self.favorites_characters]
         }
     
     def save(self):
