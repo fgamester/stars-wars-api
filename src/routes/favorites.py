@@ -150,11 +150,18 @@ def get_user_favorites(id):
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
     
-    user_favorites = favorite_characters.select().where(favorite_characters.c.user_id == id)
-    result = db.session.execute(user_favorites)
+    favorites_characters = db.session.execute(favorite_characters.select().where(favorite_characters.c.user_id == id))
+    favorites_planets = db.session.execute(favorite_planets.select().where(favorite_planets.c.user_id == id))
+
     serialized_characters = []
-    for row in result:
-        character = Character.query.get(row.character_id)
+    serialized_planets = []
+
+    for favorite in favorites_characters:
+        character = Character.query.get(favorite.character_id)
         serialized_characters.append(character.serialize())
+
+    for favorite in favorites_planets:
+        planet = Planet.query.get(favorite.planet_id)
+        serialized_planets.append(planet.serialize())
     
-    return jsonify({'status': 'success', 'favorites': serialized_characters}), 200
+    return jsonify({'status': 'success', 'favorites': {'characters': serialized_characters, 'planets': serialized_planets}}), 200
