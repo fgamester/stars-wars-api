@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import Character
+from models import Character, favorite_characters, db, User
 
 bp_character = Blueprint('character', __name__)
 
@@ -37,3 +37,24 @@ def add_character():
     character.save()
 
     return jsonify({'status': 'success', 'message': 'Character added successfully', 'character': character.serialize()}), 201
+
+
+@bp_character.route('/character/<int:id>', methods=['DELETE'])
+def remove_character(id):
+    character = Character.query.get(id)
+    favorites = db.session.query(favorite_characters).filter_by(character_id=id).all()
+
+    print(favorites)
+
+    for favorite in favorites:
+        user = User.query.get(favorite.user_id)
+        character = Character.query.get(favorite.character_id)
+        user.favorites_characters.remove(character)
+        user.update()
+
+    if not character:
+        return jsonify({'status': 'error', 'message': 'Character not found'}), 404
+
+    character.delete()
+
+    return jsonify({'status': 'success', 'message': 'Character removed successfully'}), 200

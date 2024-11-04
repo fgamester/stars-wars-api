@@ -24,17 +24,14 @@ def add_favorite():
     if not character:
         return jsonify({'status': 'error', 'message': 'Character not found'}), 404
     
-    result = db.session.execute(favorite_characters.select().where(
-        favorite_characters.c.user_id == user_id,
-        favorite_characters.c.character_id == character_id
-    )).first()
+    favorite = db.session.query(favorite_characters).filter_by(user_id=user_id, character_id=character_id).first()
 
-    if result:
+    if favorite:
         return jsonify({'status': 'error', 'message': 'Favorite already exists'}), 400
 
-    new_favorite = favorite_characters.insert().values(user_id=user_id, character_id=character_id)
-    db.session.execute(new_favorite)
-    db.session.commit()
+    character = Character.query.get(character_id)
+    user.favorites_characters.append(character)
+    user.update()
     
     return jsonify({'status': 'success', 'message': 'Favorite added successfully'}), 201
 
@@ -51,29 +48,22 @@ def remove_favorite():
         return jsonify({'status': 'error', 'message': 'Character id is required'}), 400
     
     user = User.query.get(user_id)
-    get_data = favorite_characters.select().where(
-        favorite_characters.c.user_id == user_id,
-        favorite_characters.c.character_id == character_id
-    )
-    result = db.session.execute(get_data).first()
+    favorite = db.session.query(favorite_characters).filter_by(user_id=user_id, character_id=character_id).first()
 
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
     
-    if not result:
+    if not favorite:
         return jsonify({'status': 'error', 'message': 'Favorite not found'}), 404
-    
-    del_fav = favorite_characters.delete().where(
-        favorite_characters.c.user_id == user_id,
-        favorite_characters.c.character_id == character_id
-    )
-    db.session.execute(del_fav)
-    db.session.commit()
-    
+
+    character = Character.query.get(character_id)
+    user.favorites_characters.remove(character)
+    user.update()
+
     return jsonify({'status': 'success', 'message': 'Favorite removed successfully'}), 200
 
 
-@bp_favorite.route('/planet/favorite', methods=['GET'])
+@bp_favorite.route('/planet/favorite', methods=['POST'])
 def add_favorite_planet():
     user_id = request.json.get('user_id')
     planet_id = request.json.get('planet_id')
@@ -93,18 +83,14 @@ def add_favorite_planet():
     if not planet:
         return jsonify({'status': 'error', 'message': 'Planet not found'}), 404
     
-    get_data = favorite_planets.select().where(
-        favorite_planets.c.user_id == user_id,
-        favorite_planets.c.planet_id == planet_id
-    )
-    result = db.session.execute(get_data).first()
+    favorite = db.session.query(favorite_planets).filter_by(user_id=user_id, planet_id=planet_id).first()
 
-    if result:
+    if favorite:
         return jsonify({'status': 'error', 'message': 'Favorite already exists'}), 400
     
-    new_favorite = favorite_planets.insert().values(user_id=user_id, planet_id=planet_id)
-    db.session.execute(new_favorite)
-    db.session.commit()
+    planet = Planet.query.get(planet_id)
+    user.favorites_planets.append(planet)
+    user.update()
     
     return jsonify({'status': 'success', 'message': 'Favorite added successfully'}), 201
 
@@ -121,27 +107,20 @@ def remove_favorite_planet():
         return jsonify({'status': 'error', 'message': 'Planet id is required'}), 400
     
     user = User.query.get(user_id)
-    get_data = favorite_planets.select().where(
-        favorite_planets.c.user_id == user_id,
-        favorite_planets.c.planet_id == planet_id
-    )
-    result = db.session.execute(get_data).first()
-    print(result)
+    favorite = db.session.query(favorite_planets).filter_by(user_id=user_id, planet_id=planet_id).first()
 
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
-    if not result:
+    if not favorite:
         return jsonify({'status': 'error', 'message': 'Favorite not found'}), 404
     
-    del_fav = favorite_planets.delete().where(
-        favorite_planets.c.user_id == user_id,
-        favorite_planets.c.planet_id == planet_id
-    )
-    db.session.execute(del_fav)
-    db.session.commit()
+    planet = Planet.query.get(planet_id)
+    user.favorites_planets.remove(planet)
+    user.update()
     
     return jsonify({'status': 'success', 'message': 'Favorite removed successfully'}), 200
+
 
 @bp_favorite.route('/user/favorite/<int:id>', methods=['GET'])
 def get_user_favorites(id):
@@ -150,17 +129,17 @@ def get_user_favorites(id):
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
     
-    favorites_characters = db.session.execute(favorite_characters.select().where(favorite_characters.c.user_id == id))
-    favorites_planets = db.session.execute(favorite_planets.select().where(favorite_planets.c.user_id == id))
+    characters = db.session.query(favorite_characters).filter_by(user_id=id)
+    planets = db.session.query(favorite_planets).filter_by(user_id=id)
 
     serialized_characters = []
     serialized_planets = []
 
-    for favorite in favorites_characters:
+    for favorite in characters:
         character = Character.query.get(favorite.character_id)
         serialized_characters.append(character.serialize())
 
-    for favorite in favorites_planets:
+    for favorite in planets:
         planet = Planet.query.get(favorite.planet_id)
         serialized_planets.append(planet.serialize())
     
